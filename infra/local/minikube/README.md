@@ -61,10 +61,7 @@ https://helm.sh/docs/intro/install/
 # https://artifacthub.io/packages/helm/prometheus-community/prometheus-adapter
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
-helm upgrade prometheus-adapter prometheus-community/prometheus-adapter --install --create-namespace --namespace monitoring-system --version 3.4.0 --set http://prometheus.url=prometheus.istio-system.svc  --set rules.default=false
-
-### nebo
-helm upgrade prometheus-adapter prometheus-community/prometheus-adapter --install --namespace monitoring-system -f prometheus-adapter-values.yml
+helm upgrade prometheus-adapter prometheus-community/prometheus-adapter --install --create-namespace --namespace monitoring-system -f prometheus-adapter-values.yml
 ```
 
 

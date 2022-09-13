@@ -16,9 +16,25 @@ spec:
     spec:
       containers:
       - name: echo
-        image: ealen/echo-server:0.7.0
+        #image: ealen/echo-server:0.7.0
+        image:  hashicorp/http-echo:0.2.3
+        args: 
+          - -text=Echo service
+          - -listen=:80
         ports:
-        - containerPort: 80  
+        - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
 ---
 kind: Service
 apiVersion: v1
@@ -59,7 +75,10 @@ spec:
   gateways:
   - echo-gateway
   http:
-  - route:
+  - match:
+    - uri:
+        prefix: "/echo"
+    route:
     - destination:
         host: echo
 
@@ -99,7 +118,7 @@ spec:
         name: istio_requests_per_second
       target:
         type: AverageValue
-        averageValue: 100
+        averageValue: 500
   behavior:
     # Agressive scale down for faster testing
     scaleDown:
