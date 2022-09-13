@@ -1,4 +1,4 @@
-# blumeryc
+# blumerýč
 
 
 ![logo](./logo.png)
