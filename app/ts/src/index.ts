@@ -1,27 +1,25 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-require('dotenv').config()
+// require('dotenv').config()
 import 'express-async-errors'
-import { getNumberFromEnvParser, validateConfig } from 'typed-env-parser'
+import { getStringFromEnvParser, validateConfig } from 'typed-env-parser'
 import cors from 'cors'
 import express from 'express'
 import fetch from 'node-fetch'
 import process from 'process'
 
-export const appEnvs = validateConfig({
-  PORT: getNumberFromEnvParser('PORT'),
-})
-
 // keep killing process on CMD+C if the app is running in the docker
 process.on('SIGINT', () => {
-  console.info('Interrupted')
+  console.info('💀💀💀💀️️')
   process.exit(0)
 })
 
+export const appEnvs = validateConfig({
+  downstreamServiceURL: getStringFromEnvParser('DOWNSTREAM_URL'),
+})
+
 export const appConfig = {
-  downstreamServiceURL:
-    // eslint-disable-next-line max-len
-    'https://1yaq2zrc91.execute-api.eu-central-1.amazonaws.com/default/blumeryc-downstream-service-dominik-tilp',
   DOWNSTREAM_SERVICE_TIMEOUT_MS: 300,
+  PORT: 2020,
 } as const
 
 type DownstreamServiceData = {
@@ -48,7 +46,7 @@ const services = {
   // it throws errors even when is ok but body is missing
   // TODO: add timeout for fetch requests
   getDownstreamData: async (options: { timeout: number }) => {
-    const response = await fetchWithTimeout(appConfig.downstreamServiceURL, options)
+    const response = await fetchWithTimeout(appEnvs.downstreamServiceURL, options)
 
     if (!response.ok) throw new Error('invalid HTTP network call ' + response)
     const data = (await response.json()) as DownstreamServiceData
@@ -135,10 +133,10 @@ app.get('*', (_req, res) => {
     <img src="https://github.com/miob-miob/blumeryc/raw/master/logo.png"></img>`)
 })
 
-app.listen(appEnvs.PORT, () => {
+app.listen(appConfig.PORT, () => {
   console.info(`
 --------- server is ready now ---------
-URL: http://localhost:${appEnvs.PORT}/ts
+URL: http://localhost:${appConfig.PORT}/ts
 ---------------------------------------
   `)
 })

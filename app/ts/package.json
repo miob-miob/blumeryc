@@ -7,7 +7,7 @@
   "scripts": {
     "build": "rm -rf dist && ts-node build-scripts/buildClientAssets && cp .env dist/bundle/.env",
     "run:build": "node dist/bundle/index.js",
-    "dev": "ts-node-dev --respawn src/index.ts",
+    "dev": "ts-node-dev --respawn -r dotenv/config src/index.ts",
     "kill:2020": "kill $(lsof -ti:2020)",
     "l": "yarn run lint:fix",
     "lint": "eslint \"{src}/**/*.{js,ts}\"",
