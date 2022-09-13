@@ -5,6 +5,7 @@ import aiohttp
 
 SERVER_URL = 'https://1yaq2zrc91.execute-api.eu-central-1.amazonaws.com/default/blumeryc-downstream-service-dominik-tilp'
 TIME_FOR_FIRST = 0.3
+PORT = 9002
 
 app = Quart(__name__)
 
@@ -80,7 +81,6 @@ async def das_endpoint():
             for task in requests:
                 task.cancel()
 
-            # return Response('Timeout reached!',408)
             return Response('Timeout reached!', 500)
 
         return Response("Down stream service is not working properly", 500)
@@ -88,7 +88,12 @@ async def das_endpoint():
 
 if __name__ == '__main__':
     production = True if os.environ.get('RUN_ENV') == 'prod' else False
+
+
     if production:
-        raise NotImplementedError
+        # hypercorn -b 0.0.0.0:9002 server:app
+        print(f'you should run `hypercorn -b 0.0.0.0:{PORT} server:app`')
+
     else:
-        app.run(host='0.0.0.0', port=9002, use_reloader=True, debug=False)
+        print('starting dev server')
+        app.run(host='0.0.0.0', port=PORT, use_reloader=True, debug=False)
