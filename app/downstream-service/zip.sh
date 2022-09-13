@@ -1,0 +1,1 @@
+zip -r lambda-output.zip *
