@@ -1,4 +1,4 @@
 ## TS implementation
 
-docker build . -t ahoj  
-docker run -p 2020:2020 aho
+docker build . -t tsahoj  
+docker run -p 2020:2020 tsahoj
