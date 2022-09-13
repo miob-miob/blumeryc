@@ -28,4 +28,5 @@ COPY --from=build /app /app
 
 RUN rm -rf /app/node_modules
 
-CMD ["node", "/app/dist/bundle/index.js"]
+ENTRYPOINT [ "node" ] 
+CMD [ "/app/dist/bundle/index.js" ]
