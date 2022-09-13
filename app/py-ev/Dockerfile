@@ -1,7 +1,3 @@
-
-# pip install -r /path/to/requirements.txt
-# hypercorn -b 0.0.0.0:9002 server:app
-
 FROM python:3.8-alpine
 
 WORKDIR APP
