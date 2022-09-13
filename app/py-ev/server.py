@@ -70,7 +70,6 @@ async def das_endpoint():
             requests.append(first_request)
         try:
             for coro in asyncio.as_completed(requests, timeout=timeout - TIME_FOR_FIRST):
-                print(coro)
                 next_done = await coro
                 if not isinstance(next_done, NotCorrectResponseError):
                     for task in requests:
