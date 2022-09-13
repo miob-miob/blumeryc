@@ -1,1 +1,5 @@
 # blumeryc
+
+
+![logo](./logo.png)
+
