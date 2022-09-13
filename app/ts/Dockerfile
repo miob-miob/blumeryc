@@ -26,6 +26,7 @@ WORKDIR /app
 
 COPY --from=build /app /app
 
+# TODO: dockerfile has currently same size
 RUN rm -rf /app/node_modules
 
 CMD ["node", "/app/dist/bundle/index.js"]

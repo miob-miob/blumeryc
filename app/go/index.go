@@ -129,24 +129,34 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 	// 1st req
 	go getDownstreamData(qTimeoutMs, channel1)
 
-	// fetch 2. API call
-	// TODO: bug if 1st req fail in 10sec, 2nd and 3rd will not be exec right after 1st fail
+	var INIT_REL_PENDING_FIRST_TIMEOUT = "INIT_REL_PENDING_FIRST_TIMEOUT"
+
 	go func() {
 		time.Sleep(DOWNSTREAM_SERVICE_TIMEOUT_MS)
-		if someReqAlreadySucceeded {
-			return
-		}
-		getDownstreamData(qTimeoutMs-DOWNSTREAM_SERVICE_TIMEOUT_MS, channel2)
+		// TODO: can I resolve one channel two times?
+		channel1 <- Result{isValid: false, errMessage: INIT_REL_PENDING_FIRST_TIMEOUT}
 	}()
 
-	// fetch 3. API call
-	go func() {
-		time.Sleep(DOWNSTREAM_SERVICE_TIMEOUT_MS)
-		if someReqAlreadySucceeded {
+	select {
+	case res1 := <-channel1:
+		if !res1.isValid {
+			if res1.errMessage == INIT_REL_PENDING_FIRST_TIMEOUT {
+				fmt.Println("req 1 is still pending, calling 2nd + 3rd: ")
+			} else {
+				fmt.Println("!!!!!!req 1 err : HTTP fail before others : ", res1.errMessage)
+			}
+		}
+		if res1.isValid {
+			fmt.Println("req 1  ok : before others : ", res1.message)
+			fmt.Fprintf(w, res1.message)
 			return
 		}
-		getDownstreamData(qTimeoutMs-DOWNSTREAM_SERVICE_TIMEOUT_MS, channel3)
-	}()
+	}
+
+	// fetch 2nd API call
+	go getDownstreamData(qTimeoutMs-DOWNSTREAM_SERVICE_TIMEOUT_MS, channel2)
+	// fetch  3rd API call
+	go getDownstreamData(qTimeoutMs-DOWNSTREAM_SERVICE_TIMEOUT_MS, channel3)
 
 	for i := 0; i < 3; i++ {
 
@@ -188,8 +198,8 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 
-	fmt.Println("server is running on port 8090")
-	http.HandleFunc("/hello", callDownstreamService)
+	fmt.Println("server is running on port localhost:8090")
+	http.HandleFunc("/go", callDownstreamService)
 
 	// TODO; extract port into process envs
 	http.ListenAndServe(":8090", nil)

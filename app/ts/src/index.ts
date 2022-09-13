@@ -100,13 +100,14 @@ app.get('/ts', async (req, res) => {
     }
 
     const data = await Promise.any([
+      // keep fetching 1st API call
       initReq,
-      // fetch 2. API call
+      // fetch 2nd API call
       services.getDownstreamData({
         timeout: qTimeout - appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS,
       }),
 
-      // fetch 3. API call
+      // fetch 3rd API call
       services.getDownstreamData({
         timeout: qTimeout - appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS,
       }),
