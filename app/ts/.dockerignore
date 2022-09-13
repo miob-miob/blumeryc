@@ -1,0 +1,11 @@
+# libs
+node_modules
+
+# builded server
+build
+
+# tests for app
+tests
+
+# test coverae
+.nyc_output
