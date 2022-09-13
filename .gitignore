@@ -1,3 +1,4 @@
 .DS_Store
 /app/py-ev/venv/
+/app/py/venv/
 .idea
