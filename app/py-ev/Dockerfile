@@ -2,11 +2,10 @@ FROM python:3.8-alpine
 
 WORKDIR app
 COPY requirements.txt requirements.txt
-COPY server.py server.py
-
 
 RUN pip install -r requirements.txt
 
+COPY server.py server.py
 
 EXPOSE 9002
 ENV RUN_PROD 'prod'

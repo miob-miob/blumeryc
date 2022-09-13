@@ -3,7 +3,7 @@ import asyncio
 import os
 import aiohttp
 
-SERVER_URL = 'https://1yaq2zrc91.execute-api.eu-central-1.amazonaws.com/default/blumeryc-downstream-service-dominik-tilp'
+SERVER_URL = 'http://192.168.0.129:3333/'
 TIME_FOR_FIRST = 0.3
 PORT = 9002
 
