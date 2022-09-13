@@ -3,8 +3,8 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
-	"log"
 
 	"strconv"
 
@@ -15,62 +15,85 @@ import (
 
 var blumrycURL = "https://1yaq2zrc91.execute-api.eu-central-1.amazonaws.com/default/blumeryc-downstream-service-dominik-tilp"
 
-var boolTrue bool = true
-var boolFalse bool = false
+type ResponseServiceData struct {
+	RequestId string `json:"requestId"`
+	Timeout   int    `json:"timeout"`
+}
 
-// isValid boolean
-func doBRReq(timeout time.Duration, out chan<- string) (bool, string) {
+type Result struct {
+	isValid    bool
+	message    string
+	errMessage string
+}
+
+func doBRReq(timeout time.Duration, out chan<- Result) {
+	output := new(Result)
 
 	client := http.Client{
 		Timeout: timeout,
 	}
-
-	fmt.Println("1")
 
 	resp, resErr := client.Get(blumrycURL)
 
 	// defer resp.Body.Close()
 
 	if resErr != nil {
-		fmt.Println("resErr ahoj")
-		fmt.Println(resErr)
-		return false, ""
+		output.errMessage = "resErr " + resErr.Error()
+		output.isValid = false
+		out <- *output
+		return
 	}
-	fmt.Println("2")
 
 	if resp.StatusCode != http.StatusOK {
-		return false, ""
+		output.errMessage = "status not ok"
+		output.isValid = false
+		out <- *output
+		return
 	}
 
-	fmt.Println("3")
-	// TODO: validate, that body includes data
-
-	body, bodyErr := ioutil.ReadAll(resp.Body)
-
-	if bodyErr != nil {
-		fmt.Println("bodyErr ahoj")
-		fmt.Println(resErr)
-		// log.Fatalln(bodyErr)
-		return false, ""
+	bodyRaw, parseRawBodyErr := ioutil.ReadAll(resp.Body)
+	if parseRawBodyErr != nil {
+		output.errMessage = "bodyErr" + parseRawBodyErr.Error()
+		output.isValid = false
+		out <- *output
+		return
 	}
 
-	log.Printf("error")
-	// Exception will be handled...
+	responseServiceData := ResponseServiceData{}
 
-	return true, string(body)
+	bodyParsingErr := json.Unmarshal(bodyRaw, &responseServiceData)
+
+	if bodyParsingErr != nil {
+		output.errMessage = "bodyParsingErr: " + bodyParsingErr.Error()
+		output.isValid = false
+		out <- *output
+		return
+	}
+
+	// validate JSON schema
+	if responseServiceData.RequestId == "" || responseServiceData.Timeout == 0 {
+		output.errMessage = "invalid JSON schema"
+		output.isValid = false
+		out <- *output
+		return
+	}
+
+	output.isValid = true
+	output.message = string(bodyRaw)
+
+	out <- *output
 
 }
 
-// A fundamental concept in `net/http` servers is
-// *handlers*. A handler is an object implementing the
-// `http.Handler` interface. A common way to write
-// a handler is by using the `http.HandlerFunc` adapter
-// on functions with the appropriate signature.
-func hello(w http.ResponseWriter, req *http.Request) {
+func callDownstreamService(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("------->")
 
-	x := req.URL.Query()
+	// ----------------------
+	// parse & validate inputs
 
-	qTimeout, err := strconv.Atoi(x.Get("timeout"))
+	queryParams := req.URL.Query()
+
+	qTimeout, err := strconv.Atoi(queryParams.Get("timeout"))
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -84,44 +107,112 @@ func hello(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// -------------
+	// -----------------------------------
+	// do the downstream service api calls
 
 	var userTimeout = time.Duration(qTimeout) * time.Millisecond
 	var initRequestTimeout = userTimeout
-	// TODO: implement
+	// TODO change to 300
 	var restRequestDelay = time.Duration(300) * time.Millisecond
 	var restRequestTimeout = userTimeout - restRequestDelay
 
-	fmt.Println(
-		restRequestDelay,
-		restRequestTimeout,
-		qTimeout,
-	)
+	c1 := make(chan Result)
+	c2 := make(chan Result)
+	c3 := make(chan Result)
 
-	c1 := make(chan string, 1)
-	// c2 := make(chan string)
-	// c2 := make(chan string)
+	// TODO: merge with sent variable
+	var someReqAlreadySucceeded = false
 
-	isValid, body := doBRReq(initRequestTimeout, c1)
+	// 1st req
+	go doBRReq(initRequestTimeout, c1)
 
-	fmt.Println("--------------")
-	fmt.Println(isValid)
-	fmt.Println(body)
+	go func() {
+		time.Sleep(restRequestDelay)
+		fmt.Println("is 1st done", someReqAlreadySucceeded)
+		if someReqAlreadySucceeded {
+			return
+		}
+		// 2nd req
+		doBRReq(restRequestTimeout, c2)
+	}()
 
-	fmt.Fprintf(w, body)
+	go func() {
+		time.Sleep(restRequestDelay)
+		fmt.Println("is 1st done", someReqAlreadySucceeded)
+		if someReqAlreadySucceeded {
+			return
+		}
+		// 3rd req
+		doBRReq(restRequestTimeout, c3)
+	}()
+
+	count := 0
+
+	for !someReqAlreadySucceeded {
+
+		// iterate 1 to 3 times in max scenario
+		if count == 3 {
+			break
+		}
+		// for i := 0; i < 3; i++ {
+		// Await both of these values
+		// simultaneously, printing each one as it arrives.
+		select {
+		case res1 := <-c1:
+			count++
+
+			if !res1.isValid {
+				fmt.Println("req 1 err: ", res1.errMessage)
+			} else {
+				fmt.Println("req 1 ok : ", res1.message)
+				someReqAlreadySucceeded = true
+				fmt.Fprintf(w, res1.message)
+				// will return break those channels?
+				// return
+			}
+
+		case res2 := <-c2:
+			count++
+
+			if !res2.isValid {
+				fmt.Println("req 2 err: ", res2.errMessage)
+			} else {
+				fmt.Println("req 2 ok : ", res2.message)
+				someReqAlreadySucceeded = true
+				fmt.Fprintf(w, res2.message)
+				// return
+			}
+
+		case res3 := <-c3:
+			count++
+
+			if !res3.isValid {
+				fmt.Println("req 3 err: ", res3.errMessage)
+			} else {
+				fmt.Println("req 3 ok : ", res3.message)
+				someReqAlreadySucceeded = true
+				fmt.Fprintf(w, res3.message)
+				// return
+			}
+		}
+	}
+
+	// fmt.Println("someReqAlreadySucceeded: ", someReqAlreadySucceeded)
+
+	// TODO: is 500 proper error status code?
+	if !someReqAlreadySucceeded {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "all 3 req failed")
+	}
+
+	fmt.Println("<------- req ended")
+
 }
 
 func main() {
 
-	// We register our handlers on server routes using the
-	// `http.HandleFunc` convenience function. It sets up
-	// the *default router* in the `net/http` package and
-	// takes a function as an argument.
-	http.HandleFunc("/hello", hello)
-	// http.HandleFunc("/headers", headers)
+	http.HandleFunc("/hello", callDownstreamService)
 
-	// Finally, we call the `ListenAndServe` with the port
-	// and a handler. `nil` tells it to use the default
-	// router we've just set up.
+	// TODO; extract port into process envs
 	http.ListenAndServe(":8090", nil)
 }
