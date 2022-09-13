@@ -21,8 +21,8 @@ export default {
     __filename: false, // and __filename return blank or /
   },
   optimization: {
-    // minimize: false,
-    minimize: true,
+    minimize: false,
+    // minimize: true,
     minimizer: [new TerserPlugin()],
   },
   module: {
