@@ -3,11 +3,15 @@ import asyncio
 import os
 import aiohttp
 
-SERVER_URL = 'http://192.168.0.129:3333/'
-TIME_FOR_FIRST = 0.3
+DOWNSTREAM_URL = os.environ.get('DOWNSTREAM_URL')
 PORT = 9002
+TIME_FOR_FIRST = 0.3
+
+if DOWNSTREAM_URL is None:
+    raise ValueError("'DOWNSTREAM_URL environment variable is missing!")
 
 app = Quart(__name__)
+
 
 
 def validate_response(data: dict):
@@ -23,7 +27,7 @@ class NotCorrectResponseError(ValueError):
     pass
 
 
-async def perform_request(http_client_session: aiohttp.ClientSession, url=SERVER_URL):
+async def perform_request(http_client_session: aiohttp.ClientSession, url=DOWNSTREAM_URL):
     r = await http_client_session.get(url)
     if r.status == 200:
         try:
