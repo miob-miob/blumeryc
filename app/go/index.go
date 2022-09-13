@@ -1,21 +1,23 @@
-// Writing a basic HTTP server is easy using the
-// `net/http` package.
 package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
-
-	"strconv"
-
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 )
 
-var blumrycURL = "https://1yaq2zrc91.execute-api.eu-central-1.amazonaws.com/default/blumeryc-downstream-service-dominik-tilp"
+// ~~~~~~~~~ config ~~~~~~~~~
 
-type ResponseServiceData struct {
+var blumrycURL = "https://1yaq2zrc91.execute-api.eu-central-1.amazonaws.com/default/blumeryc-downstream-service-dominik-tilp"
+var restRequestsDelayMs = 300
+var DOWNSTREAM_SERVICE_TIMEOUT_MS = time.Duration(restRequestsDelayMs) * time.Millisecond
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type ServiceDataResponse struct {
 	RequestId string `json:"requestId"`
 	Timeout   int    `json:"timeout"`
 }
@@ -27,7 +29,6 @@ type Result struct {
 }
 
 func doBRReq(timeout time.Duration, out chan<- Result) {
-	output := new(Result)
 
 	client := http.Client{
 		Timeout: timeout,
@@ -35,61 +36,65 @@ func doBRReq(timeout time.Duration, out chan<- Result) {
 
 	resp, resErr := client.Get(blumrycURL)
 
-	// defer resp.Body.Close()
-
 	if resErr != nil {
-		output.errMessage = "resErr " + resErr.Error()
-		output.isValid = false
-		out <- *output
+		out <- Result{
+			isValid:    false,
+			errMessage: "resErr " + resErr.Error(),
+		}
 		return
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		output.errMessage = "status not ok"
-		output.isValid = false
-		out <- *output
+		out <- Result{
+			isValid:    false,
+			errMessage: "status not ok",
+		}
 		return
 	}
 
 	bodyRaw, parseRawBodyErr := ioutil.ReadAll(resp.Body)
 	if parseRawBodyErr != nil {
-		output.errMessage = "bodyErr" + parseRawBodyErr.Error()
-		output.isValid = false
-		out <- *output
+		out <- Result{
+			isValid:    false,
+			errMessage: "bodyErr" + parseRawBodyErr.Error(),
+		}
 		return
 	}
 
-	responseServiceData := ResponseServiceData{}
+	ServiceDataResponse := ServiceDataResponse{}
 
-	bodyParsingErr := json.Unmarshal(bodyRaw, &responseServiceData)
+	bodyParsingErr := json.Unmarshal(bodyRaw, &ServiceDataResponse)
 
 	if bodyParsingErr != nil {
-		output.errMessage = "bodyParsingErr: " + bodyParsingErr.Error()
-		output.isValid = false
-		out <- *output
+		out <- Result{
+			isValid:    false,
+			errMessage: "bodyParsingErr: " + bodyParsingErr.Error(),
+		}
 		return
 	}
 
-	// validate JSON schema
-	if responseServiceData.RequestId == "" || responseServiceData.Timeout == 0 {
-		output.errMessage = "invalid JSON schema"
-		output.isValid = false
-		out <- *output
+	// validate JSON object schema
+	// TODO: check if it is working OK
+	if ServiceDataResponse.RequestId == "" || ServiceDataResponse.Timeout == 0 {
+		out <- Result{
+			isValid:    false,
+			errMessage: "invalid JSON schema",
+		}
 		return
 	}
 
-	output.isValid = true
-	output.message = string(bodyRaw)
-
-	out <- *output
+	out <- Result{
+		isValid: true,
+		message: string(bodyRaw),
+	}
 
 }
 
 func callDownstreamService(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("------->")
+	fmt.Println("~~~~~~>")
 
-	// ----------------------
-	// parse & validate inputs
+	// ----------------------------
+	// parse & validate HTTP inputs
 
 	queryParams := req.URL.Query()
 
@@ -97,120 +102,102 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("400 bad request, timeout qParam is not int"))
+		w.Write([]byte("400 bad request, query param 'timeout' is not int"))
 		return
 	}
 
-	if qTimeout <= 300 {
+	if qTimeout <= restRequestsDelayMs {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("400 bad request, <= 300"))
+		w.Write([]byte("400 bad request, <= " + strconv.Itoa(restRequestsDelayMs)))
 		return
 	}
 
 	// -----------------------------------
 	// do the downstream service api calls
 
-	var userTimeout = time.Duration(qTimeout) * time.Millisecond
-	var initRequestTimeout = userTimeout
-	// TODO change to 300
-	var restRequestDelay = time.Duration(300) * time.Millisecond
-	var restRequestTimeout = userTimeout - restRequestDelay
+	var qTimeoutMs = time.Duration(qTimeout) * time.Millisecond
 
+	// create channels to do the communications between async API calls
 	c1 := make(chan Result)
 	c2 := make(chan Result)
 	c3 := make(chan Result)
 
-	// TODO: merge with sent variable
+	// this variable is available across gorutine is that proper behavior?
 	var someReqAlreadySucceeded = false
 
 	// 1st req
-	go doBRReq(initRequestTimeout, c1)
+	go doBRReq(qTimeoutMs, c1)
 
+	// fetch 2. API call
 	go func() {
-		time.Sleep(restRequestDelay)
-		fmt.Println("is 1st done", someReqAlreadySucceeded)
+		time.Sleep(DOWNSTREAM_SERVICE_TIMEOUT_MS)
 		if someReqAlreadySucceeded {
 			return
 		}
-		// 2nd req
-		doBRReq(restRequestTimeout, c2)
+		doBRReq(qTimeoutMs-DOWNSTREAM_SERVICE_TIMEOUT_MS, c2)
 	}()
 
+	// fetch 3. API call
 	go func() {
-		time.Sleep(restRequestDelay)
-		fmt.Println("is 1st done", someReqAlreadySucceeded)
+		time.Sleep(DOWNSTREAM_SERVICE_TIMEOUT_MS)
 		if someReqAlreadySucceeded {
 			return
 		}
-		// 3rd req
-		doBRReq(restRequestTimeout, c3)
+		doBRReq(qTimeoutMs-DOWNSTREAM_SERVICE_TIMEOUT_MS, c3)
 	}()
 
 	count := 0
 
-	for !someReqAlreadySucceeded {
+	for i := 0; i < 3; i++ {
 
-		// iterate 1 to 3 times in max scenario
-		if count == 3 {
+		if someReqAlreadySucceeded {
 			break
 		}
-		// for i := 0; i < 3; i++ {
-		// Await both of these values
-		// simultaneously, printing each one as it arrives.
+
 		select {
 		case res1 := <-c1:
-			count++
-
 			if !res1.isValid {
 				fmt.Println("req 1 err: ", res1.errMessage)
 			} else {
 				fmt.Println("req 1 ok : ", res1.message)
 				someReqAlreadySucceeded = true
 				fmt.Fprintf(w, res1.message)
-				// will return break those channels?
-				// return
 			}
 
 		case res2 := <-c2:
-			count++
-
 			if !res2.isValid {
 				fmt.Println("req 2 err: ", res2.errMessage)
 			} else {
 				fmt.Println("req 2 ok : ", res2.message)
 				someReqAlreadySucceeded = true
 				fmt.Fprintf(w, res2.message)
-				// return
 			}
 
 		case res3 := <-c3:
-			count++
-
 			if !res3.isValid {
 				fmt.Println("req 3 err: ", res3.errMessage)
 			} else {
 				fmt.Println("req 3 ok : ", res3.message)
 				someReqAlreadySucceeded = true
 				fmt.Fprintf(w, res3.message)
-				// return
 			}
 		}
+
+		count++
 	}
 
-	// fmt.Println("someReqAlreadySucceeded: ", someReqAlreadySucceeded)
-
-	// TODO: is 500 proper error status code?
 	if !someReqAlreadySucceeded {
 		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "all 3 req failed")
+		fmt.Fprintf(w, "downstream services is not working properly")
 	}
 
-	fmt.Println("<------- req ended")
-
+	fmt.Println("<~~~~~~~ req ended")
+	fmt.Println("")
 }
 
 func main() {
 
+	fmt.Println("server is running on port 8090")
 	http.HandleFunc("/hello", callDownstreamService)
 
 	// TODO; extract port into process envs

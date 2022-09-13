@@ -111,7 +111,7 @@ app.get('/ts', async (req, res) => {
   } catch (err) {
     console.error('err ', Math.random())
     // All promises were rejected => should never happen...
-    res.status(408).send(`downstream services is not working properly`)
+    res.status(500).send(`downstream services is not working properly`)
   }
 })
 
