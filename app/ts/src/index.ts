@@ -67,9 +67,8 @@ app.use(cors())
 // response:
 //   "There is a little overhead of running javascript which care about promise resolving"
 app.get('/ts', async (req, res) => {
-  console.info('calling ts endpoint')
+  // console.info('calling ts endpoint')
   // stop working care to not to the redundant HTTP requests
-  let stopWorking = false
 
   const qTimeout = typeof req.query.timeout === 'string' ? parseInt(req.query.timeout, 10) : NaN
 
@@ -83,29 +82,35 @@ app.get('/ts', async (req, res) => {
   }
 
   try {
-    const data = await Promise.any([
-      services.getDownstreamData({ timeout: appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS }),
+    const initReq = services.getDownstreamData({ timeout: appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS })
 
+    try {
+      const initReqOKResponse = await Promise.race([
+        initReq,
+        (async () => {
+          await delay(appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS)
+          throw new Error('TIMEOUT_EXCEEDED')
+        })(),
+      ])
+
+      res.json(initReqOKResponse)
+      return
+    } catch (err) {
+      // continue
+    }
+
+    const data = await Promise.any([
+      initReq,
       // fetch 2. API call
-      (async () => {
-        await delay(appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS)
-        if (stopWorking) return
-        return services.getDownstreamData({
-          timeout: qTimeout - appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS,
-        })
-      })(),
+      services.getDownstreamData({
+        timeout: qTimeout - appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS,
+      }),
 
       // fetch 3. API call
-      (async () => {
-        await delay(appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS)
-        if (stopWorking) return
-        return services.getDownstreamData({
-          timeout: qTimeout - appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS,
-        })
-      })(),
+      services.getDownstreamData({
+        timeout: qTimeout - appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS,
+      }),
     ])
-
-    stopWorking = true
 
     res.json(data)
   } catch (err) {

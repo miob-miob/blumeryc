@@ -28,7 +28,7 @@ type Result struct {
 	errMessage string
 }
 
-func doBRReq(timeout time.Duration, out chan<- Result) {
+func getDownstreamData(timeout time.Duration, out chan<- Result) {
 
 	client := http.Client{
 		Timeout: timeout,
@@ -39,7 +39,7 @@ func doBRReq(timeout time.Duration, out chan<- Result) {
 	if resErr != nil {
 		out <- Result{
 			isValid:    false,
-			errMessage: "resErr " + resErr.Error(),
+			errMessage: "response error: " + resErr.Error(),
 		}
 		return
 	}
@@ -56,7 +56,7 @@ func doBRReq(timeout time.Duration, out chan<- Result) {
 	if parseRawBodyErr != nil {
 		out <- Result{
 			isValid:    false,
-			errMessage: "bodyErr" + parseRawBodyErr.Error(),
+			errMessage: "body parser error: " + parseRawBodyErr.Error(),
 		}
 		return
 	}
@@ -68,7 +68,7 @@ func doBRReq(timeout time.Duration, out chan<- Result) {
 	if bodyParsingErr != nil {
 		out <- Result{
 			isValid:    false,
-			errMessage: "bodyParsingErr: " + bodyParsingErr.Error(),
+			errMessage: "json body object parser error: " + bodyParsingErr.Error(),
 		}
 		return
 	}
@@ -78,7 +78,7 @@ func doBRReq(timeout time.Duration, out chan<- Result) {
 	if ServiceDataResponse.RequestId == "" || ServiceDataResponse.Timeout == 0 {
 		out <- Result{
 			isValid:    false,
-			errMessage: "invalid JSON schema",
+			errMessage: "invalid JSON schema object error",
 		}
 		return
 	}
@@ -91,6 +91,7 @@ func doBRReq(timeout time.Duration, out chan<- Result) {
 }
 
 func callDownstreamService(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("")
 	fmt.Println("~~~~~~>")
 
 	// ----------------------------
@@ -118,23 +119,24 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 	var qTimeoutMs = time.Duration(qTimeout) * time.Millisecond
 
 	// create channels to do the communications between async API calls
-	c1 := make(chan Result)
-	c2 := make(chan Result)
-	c3 := make(chan Result)
+	channel1 := make(chan Result)
+	channel2 := make(chan Result)
+	channel3 := make(chan Result)
 
 	// this variable is available across gorutine is that proper behavior?
 	var someReqAlreadySucceeded = false
 
 	// 1st req
-	go doBRReq(qTimeoutMs, c1)
+	go getDownstreamData(qTimeoutMs, channel1)
 
 	// fetch 2. API call
+	// TODO: bug if 1st req fail in 10sec, 2nd and 3rd will not be exec right after 1st fail
 	go func() {
 		time.Sleep(DOWNSTREAM_SERVICE_TIMEOUT_MS)
 		if someReqAlreadySucceeded {
 			return
 		}
-		doBRReq(qTimeoutMs-DOWNSTREAM_SERVICE_TIMEOUT_MS, c2)
+		getDownstreamData(qTimeoutMs-DOWNSTREAM_SERVICE_TIMEOUT_MS, channel2)
 	}()
 
 	// fetch 3. API call
@@ -143,10 +145,8 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 		if someReqAlreadySucceeded {
 			return
 		}
-		doBRReq(qTimeoutMs-DOWNSTREAM_SERVICE_TIMEOUT_MS, c3)
+		getDownstreamData(qTimeoutMs-DOWNSTREAM_SERVICE_TIMEOUT_MS, channel3)
 	}()
-
-	count := 0
 
 	for i := 0; i < 3; i++ {
 
@@ -154,45 +154,36 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 			break
 		}
 
+		var result = Result{}
+		var order = 0
+
 		select {
-		case res1 := <-c1:
-			if !res1.isValid {
-				fmt.Println("req 1 err: ", res1.errMessage)
-			} else {
-				fmt.Println("req 1 ok : ", res1.message)
-				someReqAlreadySucceeded = true
-				fmt.Fprintf(w, res1.message)
-			}
+		case res1 := <-channel1:
+			result = res1
+			order = 1
 
-		case res2 := <-c2:
-			if !res2.isValid {
-				fmt.Println("req 2 err: ", res2.errMessage)
-			} else {
-				fmt.Println("req 2 ok : ", res2.message)
-				someReqAlreadySucceeded = true
-				fmt.Fprintf(w, res2.message)
-			}
+		case res2 := <-channel2:
+			result = res2
+			order = 2
 
-		case res3 := <-c3:
-			if !res3.isValid {
-				fmt.Println("req 3 err: ", res3.errMessage)
-			} else {
-				fmt.Println("req 3 ok : ", res3.message)
-				someReqAlreadySucceeded = true
-				fmt.Fprintf(w, res3.message)
-			}
+		case res3 := <-channel3:
+			result = res3
+			order = 3
 		}
 
-		count++
+		if !result.isValid {
+			fmt.Println("req "+strconv.Itoa(order)+" err: ", result.errMessage)
+		} else {
+			fmt.Println("req "+strconv.Itoa(order)+" ok : ", result.message)
+			someReqAlreadySucceeded = true
+			fmt.Fprintf(w, result.message)
+			return
+		}
+
 	}
 
-	if !someReqAlreadySucceeded {
-		w.WriteHeader(http.StatusInternalServerError)
-		fmt.Fprintf(w, "downstream services is not working properly")
-	}
-
-	fmt.Println("<~~~~~~~ req ended")
-	fmt.Println("")
+	w.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprintf(w, "downstream services is not working properly")
 }
 
 func main() {
