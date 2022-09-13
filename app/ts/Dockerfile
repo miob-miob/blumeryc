@@ -24,10 +24,9 @@ FROM node:18-alpine3.15
 
 WORKDIR /app
 
-COPY --from=build /app /app
+COPY --from=build /app/dist/bundle /app
 
-# TODO: dockerfile has currently same size
 RUN rm -rf /app/node_modules
 
 ENTRYPOINT [ "node" ] 
-CMD [ "/app/dist/bundle/index.js" ]
+CMD [ "/app/index.js" ]
