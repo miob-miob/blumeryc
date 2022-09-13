@@ -1,6 +1,6 @@
 FROM python:3.8-alpine
 
-WORKDIR APP
+WORKDIR app
 COPY requirements.txt requirements.txt
 COPY server.py server.py
 
