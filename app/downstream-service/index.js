@@ -11,21 +11,8 @@ const app = express();
 
 app.use(express.json());
 
-app.get('/default/blumeryc-downstream-service-dominik-tilp', (req, res) => {
-
-   // missing implementation for req param in the previous implementations
-   const queryTimeout = parseInt(req.query.timeout, 10)
-
-   const timeout = !isNaN(queryTimeout)
-      ? queryTimeout
-      : 600
-
-   const reqTimeout = Math.round(Math.random() * timeout)
-
-   if (timeout > 59_000) {
-      res.send(400).send('invalid timeout parameter, has to be <= 59sec')
-      return
-   }
+app.get('/default/blumeryc-downstream-service-dominik-tilp/', (req, res) => {
+   const timeout = Math.round(Math.random() * 600)
 
    const failures = [
       {responseCode:200},
@@ -56,7 +43,7 @@ app.get('/default/blumeryc-downstream-service-dominik-tilp', (req, res) => {
                });
          }
       },
-      reqTimeout
+      timeout
    )
    
 });
