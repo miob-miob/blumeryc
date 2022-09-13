@@ -82,21 +82,7 @@ spec:
     - destination:
         host: echo
 
-## Istio rate limit
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: echo-ratelimit-config
-data:
-  config.yaml: |
-    domain: productpage-ratelimit
-    descriptors:
-      - key: PATH
-        value: "/""
-        rate_limit:
-          unit: second
-          requests_per_unit: 100
+## Istio 
 
 # Horizontal pod autoscaler based on custom metrics
 ---
