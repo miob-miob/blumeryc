@@ -5,9 +5,16 @@ import { getNumberFromEnvParser, validateConfig } from 'typed-env-parser'
 import cors from 'cors'
 import express from 'express'
 import fetch from 'node-fetch'
+import process from 'process'
 
 export const appEnvs = validateConfig({
   PORT: getNumberFromEnvParser('PORT'),
+})
+
+// keep killing process on CMD+C if the app is running in the docker
+process.on('SIGINT', () => {
+  console.info('Interrupted')
+  process.exit(0)
 })
 
 export const appConfig = {
@@ -100,13 +107,14 @@ app.get('/ts', async (req, res) => {
     }
 
     const data = await Promise.any([
+      // keep fetching 1st API call
       initReq,
-      // fetch 2. API call
+      // fetch 2nd API call
       services.getDownstreamData({
         timeout: qTimeout - appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS,
       }),
 
-      // fetch 3. API call
+      // fetch 3rd API call
       services.getDownstreamData({
         timeout: qTimeout - appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS,
       }),
@@ -114,7 +122,7 @@ app.get('/ts', async (req, res) => {
 
     res.json(data)
   } catch (err) {
-    console.error('err ', Math.random())
+    // console.error('err ', Math.random())
     // All promises were rejected => should never happen...
     res.status(500).send(`downstream services is not working properly`)
   }

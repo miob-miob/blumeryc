@@ -24,8 +24,9 @@ FROM node:18-alpine3.15
 
 WORKDIR /app
 
-COPY --from=build /app /app
+COPY --from=build /app/dist/bundle /app
 
 RUN rm -rf /app/node_modules
 
-CMD ["node", "/app/dist/bundle/index.js"]
+ENTRYPOINT [ "node" ] 
+CMD [ "/app/index.js" ]
