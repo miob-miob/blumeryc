@@ -1,0 +1,18 @@
+logLevel: 4
+prometheus:
+  url: http://prometheus.istio-system.svc
+
+metricsRelistInterval: 15s
+
+rules:
+  custom:
+    - seriesQuery: istio_requests_total{destination_service_name!="",reporter="destination", destination_workload_namespace!=""}
+      resources:
+        overrides:
+          destination_service_name: {resource: "service"}
+          destination_workload_namespace: {resource: "namespace"}
+          pod: {resource: "pod"}
+      name:
+        matches: "^(.*)_total"
+        as: "${1}_per_second"
+      metricsQuery: 'round(sum(rate(<<.Series>>{reporter="destination", <<.LabelMatchers>>}[1m])) by (destination_service_name, pod), 0.001)'
