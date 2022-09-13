@@ -3,10 +3,15 @@ import asyncio
 import os
 import aiohttp
 
-SERVER_URL = 'https://1yaq2zrc91.execute-api.eu-central-1.amazonaws.com/default/blumeryc-downstream-service-dominik-tilp'
+DOWNSTREAM_URL = os.environ.get('DOWNSTREAM_URL')
+PORT = 9002
 TIME_FOR_FIRST = 0.3
 
+if DOWNSTREAM_URL is None:
+    raise ValueError("'DOWNSTREAM_URL environment variable is missing!")
+
 app = Quart(__name__)
+
 
 
 def validate_response(data: dict):
@@ -22,7 +27,7 @@ class NotCorrectResponseError(ValueError):
     pass
 
 
-async def perform_request(http_client_session: aiohttp.ClientSession, url=SERVER_URL):
+async def perform_request(http_client_session: aiohttp.ClientSession, url=DOWNSTREAM_URL):
     r = await http_client_session.get(url)
     if r.status == 200:
         try:
@@ -70,7 +75,6 @@ async def das_endpoint():
             requests.append(first_request)
         try:
             for coro in asyncio.as_completed(requests, timeout=timeout - TIME_FOR_FIRST):
-                print(coro)
                 next_done = await coro
                 if not isinstance(next_done, NotCorrectResponseError):
                     for task in requests:
@@ -81,7 +85,6 @@ async def das_endpoint():
             for task in requests:
                 task.cancel()
 
-            # return Response('Timeout reached!',408)
             return Response('Timeout reached!', 500)
 
         return Response("Down stream service is not working properly", 500)
@@ -89,7 +92,12 @@ async def das_endpoint():
 
 if __name__ == '__main__':
     production = True if os.environ.get('RUN_ENV') == 'prod' else False
+
+
     if production:
-        raise NotImplementedError
+        # hypercorn -b 0.0.0.0:9002 server:app
+        print(f'you should run `hypercorn -b 0.0.0.0:{PORT} server:app`')
+
     else:
-        app.run(host='0.0.0.0', port=9002, use_reloader=True, debug=False)
+        print('starting dev server')
+        app.run(host='0.0.0.0', port=PORT, use_reloader=True, debug=False)
