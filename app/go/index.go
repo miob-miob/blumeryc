@@ -17,6 +17,14 @@ var DOWNSTREAM_SERVICE_TIMEOUT_MS = time.Duration(restRequestsDelayMs) * time.Mi
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+var SHOW_LOGS = false
+
+func consoleLog(a ...any) {
+	if SHOW_LOGS {
+		fmt.Println(a...)
+	}
+}
+
 type ServiceDataResponse struct {
 	RequestId string `json:"requestId"`
 	Timeout   int    `json:"timeout"`
@@ -91,8 +99,8 @@ func getDownstreamData(timeout time.Duration, out chan<- Result) {
 }
 
 func callDownstreamService(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("")
-	fmt.Println("~~~~~~>")
+	consoleLog("")
+	consoleLog("~~~~~~>")
 
 	// ----------------------------
 	// parse & validate HTTP inputs
@@ -141,13 +149,13 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 	case res1 := <-channel1:
 		if !res1.isValid {
 			if res1.errMessage == INIT_REL_PENDING_FIRST_TIMEOUT {
-				fmt.Println("req 1 is still pending, calling 2nd + 3rd: ")
+				consoleLog("req 1 is still pending, calling 2nd + 3rd: ")
 			} else {
-				fmt.Println("!!!!!!req 1 err : HTTP fail before others : ", res1.errMessage)
+				consoleLog("!!!!!!req 1 err : HTTP fail before others : ", res1.errMessage)
 			}
 		}
 		if res1.isValid {
-			fmt.Println("req 1  ok : before others : ", res1.message)
+			consoleLog("req 1  ok : before others : ", res1.message)
 			fmt.Fprintf(w, res1.message)
 			return
 		}
@@ -182,9 +190,9 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 		}
 
 		if !result.isValid {
-			fmt.Println("req "+strconv.Itoa(order)+" err: ", result.errMessage)
+			consoleLog("req "+strconv.Itoa(order)+" err: ", result.errMessage)
 		} else {
-			fmt.Println("req "+strconv.Itoa(order)+" ok : ", result.message)
+			consoleLog("req "+strconv.Itoa(order)+" ok : ", result.message)
 			someReqAlreadySucceeded = true
 			fmt.Fprintf(w, result.message)
 			return
@@ -198,7 +206,7 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 
-	fmt.Println("server is running on port localhost:8090")
+	consoleLog("server is running on port localhost:8090")
 	http.HandleFunc("/go", callDownstreamService)
 
 	// TODO; extract port into process envs
