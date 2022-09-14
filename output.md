@@ -5,24 +5,43 @@
 ## how the selected technologies supported parallelism (and concurrency),
 
 - GO
-    - d
+	- props
+		- compiled language (fast, memory efficient)
+		- language is designed to do async stuffs out of the box
+	- cons
+		- harder syntax to handle parallelism code	 
 - TS
-	- event loop 
-	- single thread
+  - props
+		- thanks to the event loop support of async code out of the box
+		- rich tooling to handle those edge cases
+	- cons
+		- main runtime CPU computing is on the single system process (could be slower)
+		- transpiled language
 - PY
-	- depends, if we use code based on [asyncio](https://docs.python.org/3/library/asyncio.html) (asgi) it will be similar like node js
-	- if not we will have classic thread /request (apache + mod_wsgi) 
+  - props:
+		- thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) (asgi) we have similar approach like the node js has
+	- cons
+	 	- hard to write async code with the most streight forward way	(HTTP server with threads per request in apache + mod_wsgi)
+		- transpiled language
 	
 conclusion: 
-    it really depends on what does __high__ performance really means. If we can afford 
-    node, development may be cheaper. Weakest point of application also matters  - in our case it appears to be downstream service 
+
+it really depends on what does __high__ performance really means. If we can afford 
+node, development cost may be cheaper. Weakest point of application also matters  - in our case it appears to be downstream service 
+
+In this case the pick of the technology does not mean much,
+because the bottleneck of this app was in the third part party downstream service.
+
+If we'll have more CPU heavy loaded algorithms in our codebase, 
+GO will have much better performance in comparision with interpreted languages.
+
 ## How will the different approaches in parallelism (and concurrency) affect the solution's scalability?
 
-
-## What tools will you use for autoscaling? 
-
+(viz @jurasek charts)
 
 ------------------------------------------ 
+
+## What tools will you use for autoscaling? 
 
 ## Please consider Kubernetes (GKE) 
 
