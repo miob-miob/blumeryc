@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
 
 // ~~~~~~~~~ config ~~~~~~~~~
 
-var blumrycURL = "https://1yaq2zrc91.execute-api.eu-central-1.amazonaws.com/default/blumeryc-downstream-service-dominik-tilp"
+var DOWNSTREAM_URL = os.Getenv("DOWNSTREAM_URL")
 var restRequestsDelayMs = 300
 var DOWNSTREAM_SERVICE_TIMEOUT_MS = time.Duration(restRequestsDelayMs) * time.Millisecond
 
@@ -42,7 +43,7 @@ func getDownstreamData(timeout time.Duration, out chan<- Result) {
 		Timeout: timeout,
 	}
 
-	resp, resErr := client.Get(blumrycURL)
+	resp, resErr := client.Get(DOWNSTREAM_URL)
 
 	if resErr != nil {
 		out <- Result{
