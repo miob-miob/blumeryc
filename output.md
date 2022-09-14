@@ -35,6 +35,9 @@ because the bottleneck of this app was in the third part party downstream servic
 If we'll have more CPU heavy loaded algorithms in our codebase, 
 GO will have much better performance in comparision with interpreted languages.
 
+**fun fact:**
+For this kind of assignement we picked python with event loop to not to waste resources with creating new threds which will wait till thre reponse from downstream service will come.
+
 ## How will the different approaches in parallelism (and concurrency) affect the solution's scalability?
 
 (viz @jurasek charts)
