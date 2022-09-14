@@ -1,6 +1,7 @@
 
 # Output
  
+![logo](./logo.png)
 
 ## how the selected technologies supported parallelism (and concurrency),
 
