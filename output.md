@@ -39,12 +39,6 @@ GO will have much better performance in comparision with interpreted languages.
 **fun fact:**
 For this kind of assignement we picked python with event loop to not to waste resources with creating new threds which will wait till thre reponse from downstream service will come.
 
-## How will the different approaches in parallelism (and concurrency) affect the solution's scalability?
-
-(viz @jurasek charts)
-
------------------------------------------- 
-
 ## Please consider Kubernetes (GKE) 
 
 - Considered
@@ -72,3 +66,13 @@ As we decided not to use vertical autoscaling, we would like to know how much re
 ## simple API performance tests which
 
 Used `vegeta` load test tool https://github.com/tsenart/vegeta
+
+### How will the different approaches in parallelism (and concurrency) affect the solution's scalability?
+
+see tests results
+
+## Others
+
+### Preventing server against overload
+
+Using HPA should take care of spinning more replicas under load. We can leverage the istio rate limits to project over server as well (https://istio.io/latest/docs/tasks/policy-enforcement/rate-limit/ - not tested).
