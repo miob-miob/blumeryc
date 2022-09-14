@@ -24,6 +24,8 @@ kubectl label namespace default istio-injection=enabled
 istioctl manifest apply --set profile=default \
 --set components.egressGateways[0].name=istio-egressgateway \
 --set components.egressGateways[0].enabled=true
+
+kubectl apply -n istio-system -f istio-ingress-gateway.yml 
 ```
 
 
@@ -48,12 +50,7 @@ get `helm` https://helm.sh/docs/intro/install/
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 helm upgrade prometheus-adapter prometheus-community/prometheus-adapter --install --create-namespace --namespace monitoring-system -f prometheus-adapter-values.yml
-`
-
-## Set rate limit
-
-
-https://dev.to/tresmonauten/setup-an-ingress-rate-limiter-with-envoy-and-istio-1i9g
+```
 
 ## HPA
 

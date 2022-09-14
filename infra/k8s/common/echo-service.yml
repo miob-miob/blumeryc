@@ -105,7 +105,7 @@ spec:
         name: istio_requests_per_second
       target:
         type: AverageValue
-        averageValue: 500
+        averageValue: 50
   behavior:
     # Agressive scale down for faster testing
     scaleDown:
