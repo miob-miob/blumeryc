@@ -1,10 +1,15 @@
 # TS implementation
 
-## Run local docker instance
+
+## Local development
 
 ```sh
 npm run dev
+```
 
+## Docker prod
+
+```
 docker build . -t nevimjakymamid/tsahoj
 
 docker run -p 2020:2020 \
