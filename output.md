@@ -45,21 +45,30 @@ For this kind of assignement we picked python with event loop to not to waste re
 
 ------------------------------------------ 
 
-## What tools will you use for autoscaling? 
-
 ## Please consider Kubernetes (GKE) 
 
 - Considered
 
+POC environemnt implemented in minikube environment, to test integration of all used components and services.
+
+Deployment to GKE might happen to test on real resources with higher load and more real numbers
+
+## What tools will you use for autoscaling? 
+
+Using HPA, see what metrics we would use and how.
 
 ## Suggest the best way for resource allocation and how we may solve the autoscaling
 
+Using HPA, see what metrics we would use and how.
 
 ## Will you prefer horizontal or vertical autoscaling?
 
+Horizontal autoscaling, as we believe more concurrency on service instance level is more effective for most of implementations.
+
 ## What metrics will you use as inputs for autoscaling?
+
+As we decided not to use vertical autoscaling, we would like to know how much requests is going to our service and based on those metrics we would scale new replicas. For having such metrics, we suggest to use some kind of service mesh (istio), with help of prometheus and prometheus-adapter can be cconvertes to custom metrics used by horizontal pod autoscaler in kubernetes. As baseline for metrics we could use numbers from load tests. 
 
 ## simple API performance tests which
 
-- DONE
-- TODO: add output metrics
+Used `vegeta` load test tool https://github.com/tsenart/vegeta

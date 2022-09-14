@@ -1,11 +1,12 @@
 # Load testing
 
-## Stack
+## All in cluster
 
-Vegeta load test tool https://github.com/tsenart/vegeta
+* downstream service deployed to cluster
+* each implemantion deployed to cluster
+* load testing tooling deployed and tests executed inside the cluster
 
-
-## 
+## Results
 
 1 replica
 
