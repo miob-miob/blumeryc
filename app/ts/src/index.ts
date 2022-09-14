@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-// require('dotenv').config()
 import 'express-async-errors'
 import { getStringFromEnvParser, validateConfig } from 'typed-env-parser'
 import cors from 'cors'
@@ -34,7 +33,7 @@ const fetchWithTimeout = async (resource: string, options: { timeout: number }) 
   const id = setTimeout(() => controller.abort(), options.timeout)
   const response = await fetch(resource, {
     ...options,
-    // @ts-expect-error ???
+    // @ts-expect-error
     signal: controller.signal,
   })
   clearTimeout(id)
@@ -42,9 +41,6 @@ const fetchWithTimeout = async (resource: string, options: { timeout: number }) 
 }
 
 const services = {
-  // in the JavaScript fetch API you're not able to close HTTP connections
-  // it throws errors even when is ok but body is missing
-  // TODO: add timeout for fetch requests
   getDownstreamData: async (options: { timeout: number }) => {
     const response = await fetchWithTimeout(appEnvs.downstreamServiceURL, options)
 
@@ -72,9 +68,6 @@ app.use(cors())
 // response:
 //   "There is a little overhead of running javascript which care about promise resolving"
 app.get('/ts', async (req, res) => {
-  // console.info('calling ts endpoint')
-  // stop working care to not to the redundant HTTP requests
-
   const qTimeout = typeof req.query.timeout === 'string' ? parseInt(req.query.timeout, 10) : NaN
 
   if (isNaN(qTimeout)) {
@@ -101,7 +94,7 @@ app.get('/ts', async (req, res) => {
       res.json(initReqOKResponse)
       return
     } catch (err) {
-      // continue
+      // continue fetching...
     }
 
     const data = await Promise.any([
@@ -120,8 +113,6 @@ app.get('/ts', async (req, res) => {
 
     res.json(data)
   } catch (err) {
-    // console.error('err ', Math.random())
-    // All promises were rejected => should never happen...
     res.status(500).send(`downstream services is not working properly`)
   }
 })
