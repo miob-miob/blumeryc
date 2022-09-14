@@ -113,7 +113,7 @@ app.get('/ts', async (req, res) => {
 
     res.json(data)
   } catch (err) {
-    res.status(500).send(`downstream services is not working properly`)
+    res.status(422).send(`downstream services is not working properly`)
   }
 })
 
