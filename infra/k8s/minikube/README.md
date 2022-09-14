@@ -24,10 +24,6 @@ kubectl label namespace default istio-injection=enabled
 istioctl manifest apply --set profile=default \
 --set components.egressGateways[0].name=istio-egressgateway \
 --set components.egressGateways[0].enabled=true
-
-# Access to external service \
-# --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY \
-
 ```
 
 
