@@ -1,10 +1,12 @@
-# Decisions
+# K8s
 
-## Service mesh
+## Deploy services
 
-Use istio to provide
-
-* provide visibility over requests coming to the service
-  * based on custom metrics HPA spins up more pods
-* rate limits to prevent service to be overhelmed
-  * https://istio.io/v1.12/docs/tasks/policy-enforcement/rate-limit/
+`downstream-service.yml` - dowtream service - dom's implementation of unstable server
+`echo-service` - ehco service written in go, returns plain string. Used for testing HPA with custom metrics
+`go-service.yml` - GoLang implementation of server
+`py-ev-service.yml` - Python implementation of server
+`ts-service.yml` - TypeScript implementation of server
+`tools.yml` - handy toools used for loadtesting
+`istio-ingress-gateway.yml`  - contains istio ingress gateway, so the services are accessible when using istio
+`prometheus-adapter-values.yml` - yaml values for promoetheus adapter Heml release, containing definition of custom metrics for hpa
