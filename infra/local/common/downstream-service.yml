@@ -1,39 +1,40 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ts
+  name: downstream
   labels:
-    app: ts
+    app: downstream
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ts
+      app: downstream
   template:
     metadata:
       labels:
-        app: ts
+        app: downstream
     spec:
       containers:
-      - name: echo
-        image: artifactory.shapingdixonsretail.com/nevimjakymamid/tsahoj
-        imagePullPolicy: Always
-        env:
-          - name: DOWNSTREAM_URL
-            value: "http://downstream:3333"
+      - name: downstream
+        image: nevimjakymamid/downstream-service-dominik
+        imagePullPolicy: IfNotPresent
+#        image:  hashicorp/http-echo:0.2.3
+#        args: 
+#          - -text=Doms downstream
+#          - -listen=:80
         ports:
-        - containerPort: 2020
+        - containerPort: 3333
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: ts
+  name: downstream
 spec:
   selector:
-    app: ts
+    app: downstream
   ports:
   # Default port used by the image
-  - port: 2020
+  - port: 3333
     name: http
 
 # Istio 
@@ -41,13 +42,13 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-  name: ts-gateway
+  name: downstream-gateway
 spec:
   selector:
     app: istio-ingressgateway
   servers:
   - port:
-      number: 2020
+      number: 80
       name: http
       protocol: HTTP
     hosts:
@@ -56,16 +57,16 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: ts-service-ingress
+  name: downstream-service-ingress
 spec:
   hosts: 
   - '*'
   gateways:
-  - ts-gateway
+  - downstream-gateway
   http:
   - match:
     - uri:
-        prefix: "/ts"
+        prefix: "/downstream"
     route:
     - destination:
-        host: ts
+        host: downstream

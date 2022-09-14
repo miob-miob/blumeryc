@@ -1,13 +1,12 @@
-https://istio.io/latest/docs/setup/platform-setup/minikube/
-
 # Minikube
 
-Start minikube
+get `minikube` https://minikube.sigs.k8s.io/docs/start/
 
 ```
 minikube config set driver docker
 minikube start --memory=10240 --cpus=4 --kubernetes-version=v1.24.3
 ```
+
 
 ```
 https://medium.com/codex/setup-istio-ingress-traffic-management-on-minikube-725c5e6d767a
@@ -31,14 +30,8 @@ istioctl manifest apply --set profile=default \
 
 ```
 
-## Kiali
-
-```
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.15/samples/addons/kiali.yaml
-```
 
 ## Prometheus
-
 
 
 kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.15/samples/addons/prometheus.yaml
@@ -47,13 +40,10 @@ kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.15/samp
 istioctl dashboard prometheus
 ```
 
-```
-sum(rate(istio_requests_total{app="echo", connection_security_policy="mutual_tls"}[1m])) by (destination_workload, code)
-```
-
 ## Helm
 
-https://helm.sh/docs/intro/install/
+get `helm` https://helm.sh/docs/intro/install/
+
 
 ## Prometheus adapter
 
@@ -62,8 +52,7 @@ https://helm.sh/docs/intro/install/
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 helm upgrade prometheus-adapter prometheus-community/prometheus-adapter --install --create-namespace --namespace monitoring-system -f prometheus-adapter-values.yml
-```
-
+`
 
 ## Set rate limit
 
@@ -72,9 +61,16 @@ https://dev.to/tresmonauten/setup-an-ingress-rate-limiter-with-envoy-and-istio-1
 
 ## HPA
 
-https://github.com/stefanprodan/istio-hpa
-
-https://martinheinz.dev/blog/76
 kubectl get --raw "/apis/custom.metrics.k8s.io/v1beta1/namespaces/default/pods/*/istio_requests_per_second"  | jq .
 kubectl get --raw "/apis/custom.metrics.k8s.io/v1beta1/namespaces/default/services/*/istio_requests_per_second"  | jq .
 
+https://github.com/stefanprodan/istio-hpa
+https://martinheinz.dev/blog/76
+s
+
+
+## Kiali
+
+```
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.15/samples/addons/kiali.yaml
+```
