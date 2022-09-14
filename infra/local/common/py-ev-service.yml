@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: echo
-        image: oborim01/kukurice
+        image: nevimjakymamid/py-ev-dominik@sha256:4a1453f440bc45427640bb5182cf9880d07286888199e2d7a801e3ec46b6ef94
         imagePullPolicy: Always
         env:
           - name: DOWNSTREAM_URL

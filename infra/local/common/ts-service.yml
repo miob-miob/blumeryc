@@ -16,8 +16,7 @@ spec:
     spec:
       containers:
       - name: echo
-        image: artifactory.shapingdixonsretail.com/nevimjakymamid/tsahoj
-        imagePullPolicy: Always
+        image: nevimjakymamid/tsahoj@sha256:26938f7fdf5dd566679e3660c3c2292c6918e4f38743321b36ab8cd394300d93
         env:
           - name: DOWNSTREAM_URL
             value: "http://downstream:3333"

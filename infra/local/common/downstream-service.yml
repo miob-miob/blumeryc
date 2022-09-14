@@ -17,7 +17,6 @@ spec:
       containers:
       - name: downstream
         image: nevimjakymamid/downstream-service-dominik
-        imagePullPolicy: IfNotPresent
 #        image:  hashicorp/http-echo:0.2.3
 #        args: 
 #          - -text=Doms downstream

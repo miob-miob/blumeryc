@@ -16,8 +16,7 @@ spec:
     spec:
       containers:
       - name: echo
-        image: nevimjakymamid/go-dominik
-        imagePullPolicy: Always
+        image: nevimjakymamid/go-dominik@sha256:af9c62fbee0ee4b802159952d17195d180a164d5b1a669f42a8c7cca466afbfa
         env:
           - name: DOWNSTREAM_URL
             value: "http://downstream:3333"
