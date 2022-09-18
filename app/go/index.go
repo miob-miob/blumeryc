@@ -201,7 +201,7 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 
 	}
 
-	w.WriteHeader(http.StatusInternalServerError)
+	w.WriteHeader(http.StatusUnprocessableEntity)
 	fmt.Fprintf(w, "downstream services is not working properly")
 }
 

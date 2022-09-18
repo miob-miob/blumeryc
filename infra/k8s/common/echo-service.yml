@@ -1,0 +1,116 @@
+#Simple  echo service with HPA in place based on custom metrics
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo
+  labels:
+    app: echo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: echo
+  template:
+    metadata:
+      labels:
+        app: echo
+    spec:
+      containers:
+      - name: echo
+        image:  hashicorp/http-echo:0.2.3
+        args: 
+          - -text=Echo service
+          - -listen=:80
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: echo
+spec:
+  selector:
+    app: echo
+  ports:
+  # Default port used by the image
+  - port: 80
+    name: http
+
+# Istio 
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: echo-gateway
+spec:
+  selector:
+    app: istio-ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: echo-service-ingress
+spec:
+  hosts: 
+  - '*'
+  gateways:
+  - echo-gateway
+  http:
+  - match:
+    - uri:
+        prefix: "/echo"
+    route:
+    - destination:
+        host: echo
+
+## Istio 
+
+# Horizontal pod autoscaler based on custom metrics
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: echo
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: echo
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Pods
+    pods:
+      metric:
+        name: istio_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: 50
+  behavior:
+    # Agressive scale down for faster testing
+    scaleDown:
+      stabilizationWindowSeconds: 30
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15

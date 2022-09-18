@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: py-ev
+  labels:
+    app: py-ev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: py-ev
+  template:
+    metadata:
+      labels:
+        app: py-ev
+    spec:
+      containers:
+      - name: echo
+        image: nevimjakymamid/py-ev-dominik@sha256:4a1453f440bc45427640bb5182cf9880d07286888199e2d7a801e3ec46b6ef94
+        imagePullPolicy: Always
+        env:
+          - name: DOWNSTREAM_URL
+            value: "http://downstream:3333"
+        ports:
+        - containerPort: 9002
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: py-ev
+spec:
+  selector:
+    app: py-ev
+  ports:
+  # Default port used by the image
+  - port: 9002
+    name: http
+
+# Istio 
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: py-ev-gateway
+spec:
+  selector:
+    app: istio-ingressgateway
+  servers:
+  - port:
+      number: 9002
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: py-ev-service-ingress
+spec:
+  hosts: 
+  - '*'
+  gateways:
+  - py-ev-gateway
+  http:
+  - match:
+    - uri:
+        prefix: "/py-ev"
+    route:
+    - destination:
+        host: py-ev

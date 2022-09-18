@@ -1,6 +1,5 @@
 # TS implementation
 
-
 ## Local development
 
 ```sh

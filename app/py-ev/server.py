@@ -85,9 +85,9 @@ async def das_endpoint():
             for task in requests:
                 task.cancel()
 
-            return Response('Timeout reached!', 500)
+            return Response('Timeout reached!', 422)
 
-        return Response("Down stream service is not working properly", 500)
+        return Response("Down stream service is not working properly", 422)
 
 
 if __name__ == '__main__':

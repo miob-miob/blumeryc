@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go
+  labels:
+    app: go
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go
+  template:
+    metadata:
+      labels:
+        app: go
+    spec:
+      containers:
+      - name: echo
+        image: nevimjakymamid/go-dominik@sha256:af9c62fbee0ee4b802159952d17195d180a164d5b1a669f42a8c7cca466afbfa
+        env:
+          - name: DOWNSTREAM_URL
+            value: "http://downstream:3333"
+        ports:
+        - containerPort: 8090
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: go
+spec:
+  selector:
+    app: go
+  ports:
+  # Default port used by the image
+  - port: 8090
+    name: http
+
+# Istio 
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: go-gateway
+spec:
+  selector:
+    app: istio-ingressgateway
+  servers:
+  - port:
+      number: 8090
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: go-service-ingress
+spec:
+  hosts: 
+  - '*'
+  gateways:
+  - go-gateway
+  http:
+  - match:
+    - uri:
+        prefix: "/go"
+    route:
+    - destination:
+        host: go

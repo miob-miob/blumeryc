@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ts
+  labels:
+    app: ts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ts
+  template:
+    metadata:
+      labels:
+        app: ts
+    spec:
+      containers:
+      - name: echo
+        image: nevimjakymamid/tsahoj@sha256:26938f7fdf5dd566679e3660c3c2292c6918e4f38743321b36ab8cd394300d93
+        env:
+          - name: DOWNSTREAM_URL
+            value: "http://downstream:3333"
+        ports:
+        - containerPort: 2020
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: ts
+spec:
+  selector:
+    app: ts
+  ports:
+  # Default port used by the image
+  - port: 2020
+    name: http
+
+# Istio 
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: ts-gateway
+spec:
+  selector:
+    app: istio-ingressgateway
+  servers:
+  - port:
+      number: 2020
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ts-service-ingress
+spec:
+  hosts: 
+  - '*'
+  gateways:
+  - ts-gateway
+  http:
+  - match:
+    - uri:
+        prefix: "/ts"
+    route:
+    - destination:
+        host: ts
