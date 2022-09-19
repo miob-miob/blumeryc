@@ -80,7 +80,7 @@ app.get('/ts', async (req, res) => {
   }
 
   try {
-    const initReq = services.getDownstreamData({ timeout: appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS })
+    const initReq = services.getDownstreamData({ timeout: qTimeout })
 
     try {
       const initReqOKResponse = await Promise.race([
