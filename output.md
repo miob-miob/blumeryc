@@ -127,6 +127,21 @@ Error Set:
 400 Bad Request
 ```
 
+py:
+```
+echo "GET http://py:9002/py?timeout=333" | vegeta attack -rate=100 -duration=1m -workers=100 | 
+Requests      [total, rate, throughput]         6000, 100.02, 1.77
+Duration      [total, attack, wait]             1m30s, 59.99s, 30s
+Latencies     [min, mean, 50, 90, 95, 99, max]  188.843ms, 29.562s, 30s, 30s, 30s, 30.001s, 30.014s
+Bytes In      [total, mean]                     13968, 2.33
+Bytes Out     [total, mean]                     0, 0.00
+Success       [ratio]                           2.65%
+Status Codes  [code:count]                      0:5673  200:159  422:168
+Error Set:
+422 UNPROCESSABLE ENTITY
+...Number of `read: connection reset by peer`...
+```
+
 py-ev:
 ```
 echo "GET http://py-ev:9002/py-ev?timeout=333" | vegeta attack -rate=100 -duration=1m -workers=100 | vegeta report
@@ -138,7 +153,9 @@ Bytes Out     [total, mean]                     0, 0.00
 Success       [ratio]                           49.20%
 Status Codes  [code:count]                      200:2952  422:3048
 Error Set:
-422
+422 UNPROCESSABLE ENTITY
+Get "http://py:9002/py?timeout=333": EOF
+Get "http://py:9002/py?timeout=333": context deadline exceeded (Client.Timeout exceeded while awaiting headers)
 ```
 
 ts:
@@ -190,6 +207,21 @@ Error Set:
 502 Bad Gateway
 ```
 
+py:
+```
+echo "GET http://py:9002/py?timeout=333" | vegeta attack -rate=500 -duration=1m -workers=100 | vegeta report
+Requests      [total, rate, throughput]         29995, 499.90, 1.73
+Duration      [total, attack, wait]             1m30s, 1m0s, 29.92s
+Latencies     [min, mean, 50, 90, 95, 99, max]  3.913ms, 28.483s, 30s, 30.001s, 30.003s, 30.035s, 30.486s
+Bytes In      [total, mean]                     13560, 0.45
+Bytes Out     [total, mean]                     0, 0.00
+Success       [ratio]                           0.52%
+Status Codes  [code:count]                      0:29680  200:156  422:159
+Error Set:
+422 UNPROCESSABLE ENTITY
+...Number of `read: connection reset by peer`...
+```
+
 py-ev:
 ```
 echo "GET http://py-ev:9002/py-ev?timeout=333" | vegeta attack -rate=500 -duration=1m -workers=100 | vegeta report
@@ -201,7 +233,7 @@ Bytes Out     [total, mean]                     0, 0.00
 Success       [ratio]                           0.31%
 Status Codes  [code:count]                      0:18908  200:93  422:10999
 Error Set:
-422
+422 Unprocessable Entity
 ...Number of `read: connection reset by peer`...
 ```
 
@@ -253,6 +285,21 @@ Error Set:
 502 Bad Gateway
 400 Bad Request
 503 Service Unavailable
+```
+
+py:
+```
+echo "GET http://py:9002/py?timeout=333" | vegeta attack -rate=1000 -duration=1m -workers=100 | vegeta report
+Requests      [total, rate, throughput]         58603, 814.39, 0.73
+Duration      [total, attack, wait]             1m41s, 1m12s, 28.727s
+Latencies     [min, mean, 50, 90, 95, 99, max]  27.512ms, 21.223s, 30.001s, 33.207s, 35.535s, 40.275s, 48.695s
+Bytes In      [total, mean]                     7036, 0.12
+Bytes Out     [total, mean]                     0, 0.00
+Success       [ratio]                           0.13%
+Status Codes  [code:count]                      0:58448  200:74  422:79  500:2
+Error Set:
+422 UNPROCESSABLE ENTITY
+...Number of `read: connection reset by peer`...
 ```
 
 py-ev:
