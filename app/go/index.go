@@ -128,7 +128,8 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 	var qTimeoutMs = time.Duration(qTimeout) * time.Millisecond
 
 	// TODO:
-	// we need to close unused channels when endpoint will be done to not to have deadlock here
+	// we need to close unused channels when endpoint will be done because it looks that garbage collector
+	// does not remove channels and there could be memory leak
 	// add: close(channelX) to the end of getDownstreamData i guess
 	// more info: https://golangbot.com/channels/
 	// example: https://go.dev/play/p/q1O5sNx4aW
