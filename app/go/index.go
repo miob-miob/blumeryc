@@ -127,7 +127,11 @@ func callDownstreamService(w http.ResponseWriter, req *http.Request) {
 
 	var qTimeoutMs = time.Duration(qTimeout) * time.Millisecond
 
-	// create channels to do the communications between async API calls
+	// TODO:
+	// we need to close unused channels when endpoint will be done to not to have deadlock here
+	// add: close(channelX) to the end of getDownstreamData i guess
+	// more info: https://golangbot.com/channels/
+	// example: https://go.dev/play/p/q1O5sNx4aW
 	channel1 := make(chan Result)
 	channel2 := make(chan Result)
 	channel3 := make(chan Result)
