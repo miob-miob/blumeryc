@@ -9,7 +9,7 @@ import process from 'process'
 // keep killing process on CMD+C if the app is running in the docker
 process.on('SIGINT', () => {
   console.info('💀💀💀💀️️')
-  process.exit(0)
+  process.exit()
 })
 
 export const appEnvs = validateConfig({
@@ -31,13 +31,18 @@ const delay = (ms: number) => new Promise(res => setTimeout(res, ms))
 const fetchWithTimeout = async (resource: string, options: { timeout: number }) => {
   const controller = new AbortController()
   const id = setTimeout(() => controller.abort(), options.timeout)
-  const response = await fetch(resource, {
-    ...options,
-    // @ts-expect-error
-    signal: controller.signal,
-  })
-  clearTimeout(id)
-  return response
+  try {
+    const response = await fetch(resource, {
+      ...options,
+      // @ts-expect-error
+      signal: controller.signal,
+    })
+    return response
+  } catch (err) {
+    throw err
+  } finally {
+    clearTimeout(id)
+  }
 }
 
 const services = {
@@ -82,6 +87,8 @@ app.get('/ts', async (req, res) => {
   try {
     const initReq = services.getDownstreamData({ timeout: qTimeout })
 
+    const initReqStartTime = Date.now()
+
     try {
       const initReqOKResponse = await Promise.race([
         initReq,
@@ -97,17 +104,19 @@ app.get('/ts', async (req, res) => {
       // continue fetching...
     }
 
+    const initAsyncBlockTookMs = Date.now() - initReqStartTime 
+
     const data = await Promise.any([
       // keep fetching 1st API call
       initReq,
       // fetch 2nd API call
       services.getDownstreamData({
-        timeout: qTimeout - appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS,
+        timeout: qTimeout - initAsyncBlockTookMs,
       }),
 
       // fetch 3rd API call
       services.getDownstreamData({
-        timeout: qTimeout - appConfig.DOWNSTREAM_SERVICE_TIMEOUT_MS,
+        timeout: qTimeout - initAsyncBlockTookMs,
       }),
     ])
 

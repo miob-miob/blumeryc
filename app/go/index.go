@@ -39,6 +39,7 @@ type Result struct {
 
 func getDownstreamData(timeout time.Duration, out chan<- Result) {
 
+	// TODO: https://pkg.go.dev/context
 	client := http.Client{
 		Timeout: timeout,
 	}
@@ -70,9 +71,10 @@ func getDownstreamData(timeout time.Duration, out chan<- Result) {
 		return
 	}
 
-	ServiceDataResponse := ServiceDataResponse{}
+	// ....
+	serviceDataResponse := ServiceDataResponse{}
 
-	bodyParsingErr := json.Unmarshal(bodyRaw, &ServiceDataResponse)
+	bodyParsingErr := json.Unmarshal(bodyRaw, &serviceDataResponse)
 
 	if bodyParsingErr != nil {
 		out <- Result{
@@ -84,7 +86,7 @@ func getDownstreamData(timeout time.Duration, out chan<- Result) {
 
 	// validate JSON object schema
 	// TODO: check if it is working OK
-	if ServiceDataResponse.RequestId == "" || ServiceDataResponse.Timeout == 0 {
+	if serviceDataResponse.RequestId == "" || serviceDataResponse.Timeout == 0 {
 		out <- Result{
 			isValid:    false,
 			errMessage: "invalid JSON schema object error",
