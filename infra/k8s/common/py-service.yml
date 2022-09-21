@@ -1,39 +1,39 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: downstream
+  name: py
   labels:
-    app: downstream
+    app: py
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: downstream
+      app: py
   template:
     metadata:
       labels:
-        app: downstream
+        app: py
     spec:
       containers:
-      - name: downstream
-        image: artifactory.shapingdixonsretail.com/nevimjakymamid/downstream-service-dominik
-#        image:  hashicorp/http-echo:0.2.3
-#        args: 
-#          - -text=Doms downstream
-#          - -listen=:80
+      - name: echo
+        image: artifactory.shapingdixonsretail.com/oborim01/non_kokurice@sha256:ad8d3b7b0b0aaaa49e8fa7cc49ec9b5a212fdf871918bb8406eacbafe659afed
+        imagePullPolicy: Always
+        env:
+          - name: DOWNSTREAM_URL
+            value: "http://downstream:3333"
         ports:
-        - containerPort: 3333
+        - containerPort: 9002
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: downstream
+  name: py
 spec:
   selector:
-    app: downstream
+    app: py
   ports:
   # Default port used by the image
-  - port: 3333
+  - port: 9002
     name: http
 
 # Istio 
@@ -41,13 +41,13 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-  name: downstream-gateway
+  name: py-gateway
 spec:
   selector:
     app: istio-ingressgateway
   servers:
   - port:
-      number: 80
+      number: 9002
       name: http
       protocol: HTTP
     hosts:
@@ -56,16 +56,16 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: downstream-service-ingress
+  name: py-service-ingress
 spec:
   hosts: 
   - '*'
   gateways:
-  - downstream-gateway
+  - py-gateway
   http:
   - match:
     - uri:
-        prefix: "/downstream"
+        prefix: "/py"
     route:
     - destination:
-        host: downstream
+        host: py

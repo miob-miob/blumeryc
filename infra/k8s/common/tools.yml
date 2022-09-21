@@ -5,10 +5,10 @@ metadata:
 spec:
   containers:
     - name: vegeta
-      image: peterevans/vegeta:6.9.1
+      image: artifactory.shapingdixonsretail.com/peterevans/vegeta:6.9.1
       command: ["/bin/sh", "-c"]
       args: ["tail -f /dev/null"]
     - name: swiss-army-knife
-      image: leodotcloud/swiss-army-knife:v0.10
+      image: artifactory.shapingdixonsretail.com/leodotcloud/swiss-army-knife:v0.10
       command: ["tail"]
       args: ["-f", "/dev/null"]
