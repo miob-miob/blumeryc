@@ -28,26 +28,9 @@ type DownstreamServiceData = {
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms))
 
-const fetchWithTimeout = async (resource: string, options: { timeout: number }) => {
-  const controller = new AbortController()
-  const id = setTimeout(() => controller.abort(), options.timeout)
-  try {
-    const response = await fetch(resource, {
-      ...options,
-      // @ts-expect-error
-      signal: controller.signal,
-    })
-    return response
-  } catch (err) {
-    throw err
-  } finally {
-    clearTimeout(id)
-  }
-}
-
 const services = {
-  getDownstreamData: async (options: { timeout: number }) => {
-    const response = await fetchWithTimeout(appEnvs.downstreamServiceURL, options)
+  getDownstreamData: async () => {
+    const response = await fetch(appEnvs.downstreamServiceURL)
 
     if (!response.ok) throw new Error('invalid HTTP network call ' + response)
     const data = (await response.json()) as DownstreamServiceData
@@ -85,9 +68,14 @@ app.get('/ts', async (req, res) => {
   }
 
   try {
-    const initReq = services.getDownstreamData({ timeout: qTimeout })
+    const initReq = services.getDownstreamData()
 
-    const initReqStartTime = Date.now()
+    const throwAfterGlobalTimeoutPromise = (async () => {
+      await delay(qTimeout)
+      // we have to handle that we will not throw error for sent request
+      // because it will not be caught by express handler try catch and error is propagated to the unhandledRejections
+      if (!res.writableEnded) throw new Error('GLOBAL_TIMEOUT_EXCEEDED')
+    })()
 
     try {
       const initReqOKResponse = await Promise.race([
@@ -104,23 +92,22 @@ app.get('/ts', async (req, res) => {
       // continue fetching...
     }
 
-    const initAsyncBlockTookMs = Date.now() - initReqStartTime 
+    const data = await Promise.race([
+      throwAfterGlobalTimeoutPromise,
 
-    const data = await Promise.any([
-      // keep fetching 1st API call
-      initReq,
-      // fetch 2nd API call
-      services.getDownstreamData({
-        timeout: qTimeout - initAsyncBlockTookMs,
-      }),
+      Promise.any([
+        // keep fetching 1st API call
+        initReq,
 
-      // fetch 3rd API call
-      services.getDownstreamData({
-        timeout: qTimeout - initAsyncBlockTookMs,
-      }),
+        // fetch 2nd API call
+        services.getDownstreamData(),
+
+        // fetch 3rd API call
+        services.getDownstreamData(),
+      ]),
     ])
 
-    res.json(data)
+    res.json(data!)
   } catch (err) {
     res.status(422).send(`downstream services is not working properly`)
   }
